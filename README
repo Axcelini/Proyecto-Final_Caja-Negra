@@ -1,1 +1,73 @@
+# Caja Negra — ¿Constante o Balanceada? 🔶
 
+Simulación interactiva, en el navegador, del método **clásico** para resolver
+el problema de la caja negra: dado un oráculo `f(x)` que solo acepta `0` o `1`,
+determinar si es **constante** (`f(0) = f(1)`) o **balanceada** (`f(0) ≠ f(1)`).
+
+Este proyecto es la línea base clásica de una actividad sobre el
+**algoritmo de Deutsch**, el primer algoritmo cuántico conocido, que resuelve
+el mismo problema con una sola consulta en lugar de dos.
+
+## 🚀 Demo
+
+Solo hay que abrir `caja_negra.html` en cualquier navegador — no requiere
+instalación, servidor ni conexión a internet.
+
+## 🧠 El problema
+
+Existen únicamente cuatro funciones posibles para la caja:
+
+| Función | Tipo |
+|---|---|
+| `f(x) = 0` | Constante |
+| `f(x) = 1` | Constante |
+| `f(x) = x` | Balanceada |
+| `f(x) = 1 - x` | Balanceada |
+
+El método clásico solo tiene una forma segura de saber cuál es: **consultar
+la caja dos veces** (`f(0)` y `f(1)`) y comparar las respuestas.
+
+## ✨ Qué hace la simulación
+
+- Elige una caja al azar entre las 4 funciones posibles.
+- Consulta `f(0)` y `f(1)` y muestra el resultado en un panel con estilo de
+  "caja negra" (como una caja negra de avión).
+- Calcula el veredicto (**Constante** / **Balanceada**) y lo despliega junto
+  con una gráfica de barras de la corrida actual.
+- Lleva un **historial visual** de todas las corridas realizadas.
+- Acumula estadísticas en vivo: número de corridas, % de exactitud y
+  promedio de consultas usadas — que siempre converge a **100% / 2.00**,
+  confirmando el comportamiento determinista del método clásico.
+
+Cada clic en **"Ejecutar nueva caja"** repite el experimento y actualiza
+todo en la misma pantalla, sin recargar la página.
+
+## 🛠️ Tecnología
+
+Un único archivo HTML autocontenido:
+
+- HTML + CSS (sin frameworks ni dependencias externas)
+- JavaScript vanilla para la lógica de simulación y el renderizado dinámico
+
+## 📂 Estructura
+
+```
+caja_negra.html   # todo el proyecto: markup, estilos y lógica en un solo archivo
+```
+
+## ▶️ Cómo correrlo
+
+```bash
+git clone https://github.com/<tu-usuario>/<tu-repo>.git
+cd <tu-repo>
+# abre caja_negra.html con doble clic, o:
+open caja_negra.html      # macOS
+start caja_negra.html     # Windows
+```
+
+## 📊 Contexto del proyecto
+
+Este código es parte de una actividad de la materia **Fundamentos de
+Computación Cuántica**, cuyo objetivo final es comparar esta solución
+clásica (2 consultas) contra el algoritmo de Deutsch implementado con
+Qiskit (1 consulta), como ejemplo introductorio de ventaja cuántica.
