@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caja negra — Registrador clásico</title>
+<style>
+  :root{
+    --bg-0:#0b0d10;
+    --bg-1:#14171b;
+    --panel:#1b1f24;
+    --panel-line:#2a2f36;
+    --orange:#ff7a1a;
+    --orange-dim:#5c3717;
+    --amber:#ffb454;
+    --teal:#2dd4bf;
+    --violet:#b18cff;
+    --ink-0:#f2ede4;
+    --ink-1:#a7adb4;
+    --ink-2:#6b7178;
+    --mono: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --disp: 'Space Grotesk', var(--mono);
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:
+      radial-gradient(1100px 550px at 15% -10%, #1b2027 0%, transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, #1a1512 0%, transparent 50%),
+      var(--bg-0);
+    color:var(--ink-0);
+    font-family:var(--mono);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  @media (prefers-reduced-motion:no-preference){
+    .light{transition:background .12s ease, box-shadow .12s ease;}
+    .btn{transition:transform .08s ease, box-shadow .15s ease, background .15s ease;}
+    .bar-fill{transition:height .5s cubic-bezier(.2,.8,.2,1), background .3s ease;}
+    .tick{animation:pop .35s cubic-bezier(.2,.9,.25,1);}
+    .verdict{transition:color .2s ease;}
+  }
+  @keyframes pop{
+    from{transform:scaleY(.2); opacity:0;}
+    to{transform:scaleY(1); opacity:1;}
+  }
+  @keyframes blink{
+    0%,100%{opacity:1;}
+    50%{opacity:.35;}
+  }
+
+  .wrap{
+    max-width:960px;
+    margin:0 auto;
+    padding:48px 24px 72px;
+  }
+
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--orange);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:7px;height:7px;border-radius:50%;
+    background:var(--orange);
+    box-shadow:0 0 10px var(--orange);
+  }
+
+  h1{
+    font-family:var(--disp);
+    font-weight:700;
+    font-size:clamp(28px,4.2vw,42px);
+    line-height:1.08;
+    margin:0 0 12px;
+    letter-spacing:-0.01em;
+  }
+  h1 span{color:var(--orange);}
+
+  .sub{
+    color:var(--ink-1);
+    font-size:14.5px;
+    line-height:1.65;
+    max-width:640px;
+    margin:0 0 40px;
+  }
+  .sub code{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    padding:1px 6px;
+    border-radius:4px;
+    color:var(--amber);
+    font-size:13px;
+  }
+
+  /* ---- panel principal: caja negra + readout ---- */
+  .console{
+    display:grid;
+    grid-template-columns:280px 1fr;
+    gap:1px;
+    background:var(--panel-line);
+    border:1px solid var(--panel-line);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 30px 60px -30px rgba(0,0,0,.6);
+  }
+  @media (max-width:640px){
+    .console{grid-template-columns:1fr;}
+  }
+
+  .box-side, .readout-side{
+    background:var(--panel);
+    padding:26px;
+  }
+
+  .box-label{
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-2);
+    margin-bottom:18px;
+  }
+
+  .box-svg-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:20px;
+  }
+
+  .lights{
+    display:flex;
+    justify-content:center;
+    gap:28px;
+    margin-bottom:22px;
+  }
+  .light-unit{
+    text-align:center;
+  }
+  .light{
+    width:16px;height:16px;
+    border-radius:50%;
+    margin:0 auto 8px;
+    background:#3a2010;
+    border:1px solid #4a2c14;
+  }
+  .light.on{
+    background:var(--orange);
+    box-shadow:0 0 16px 3px rgba(255,122,26,.55);
+  }
+  .light-unit small{
+    display:block;
+    color:var(--ink-2);
+    font-size:10px;
+    letter-spacing:.08em;
+  }
+
+  .btn{
+    width:100%;
+    background:var(--orange);
+    color:#1a0e05;
+    border:none;
+    font-family:var(--disp);
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:.02em;
+    padding:14px 16px;
+    border-radius:9px;
+    cursor:pointer;
+    box-shadow:0 8px 20px -8px rgba(255,122,26,.6);
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 10px 24px -8px rgba(255,122,26,.75);}
+  .btn:active{transform:translateY(0px) scale(.99);}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:3px;}
+
+  .hint{
+    color:var(--ink-2);
+    font-size:11px;
+    text-align:center;
+    margin-top:10px;
+    letter-spacing:.02em;
+  }
+
+  .mode-toggle{
+    display:flex;
+    gap:1px;
+    background:var(--panel-line);
+    border:1px solid var(--panel-line);
+    border-radius:10px;
+    overflow:hidden;
+    margin-bottom:22px;
+  }
+  .mode-btn{
+    flex:1;
+    background:var(--bg-1);
+    color:var(--ink-1);
+    border:none;
+    font-family:var(--disp);
+    font-weight:700;
+    font-size:12.5px;
+    padding:12px 10px;
+    cursor:pointer;
+  }
+  .mode-btn.active{
+    background:var(--violet);
+    color:#180f2e;
+  }
+  .mode-btn:not(.active):hover{color:var(--ink-0);}
+
+  .qstate{
+    text-align:center;
+    font-family:var(--disp);
+    font-size:15px;
+    color:var(--violet);
+    background:#140f22;
+    border:1px solid #2c2148;
+    border-radius:8px;
+    padding:10px 8px;
+    margin-bottom:16px;
+    letter-spacing:.01em;
+    min-height:20px;
+  }
+  .light.on.q{
+    background:var(--violet);
+    box-shadow:0 0 16px 3px rgba(177,140,255,.55);
+  }
+  .verdict.constante.q, .cell .v.q{color:var(--violet);}
+
+  /* readout */
+  .readout-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-bottom:20px;
+  }
+  .cell{
+    background:var(--bg-1);
+    border:1px solid var(--panel-line);
+    border-radius:9px;
+    padding:12px 14px;
+  }
+  .cell .k{
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-2);
+    margin-bottom:6px;
+  }
+  .cell .v{
+    font-family:var(--disp);
+    font-size:22px;
+    font-weight:700;
+    color:var(--amber);
+  }
+
+  .verdict-row{
+    background:var(--bg-1);
+    border:1px solid var(--panel-line);
+    border-radius:9px;
+    padding:16px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:22px;
+  }
+  .verdict-row .k{
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-2);
+  }
+  .verdict{
+    font-family:var(--disp);
+    font-size:20px;
+    font-weight:700;
+  }
+  .verdict.constante{color:var(--teal);}
+  .verdict.balanceada{color:var(--violet);}
+
+  /* bar chart de la corrida actual */
+  .chart-title{
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-2);
+    margin:0 0 10px;
+  }
+  .bars{
+    display:flex;
+    align-items:flex-end;
+    gap:22px;
+    height:100px;
+    padding:0 6px 0;
+    border-bottom:1px solid var(--panel-line);
+    margin-bottom:8px;
+  }
+  .bar-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    width:64px;
+  }
+  .bar-track{
+    height:80px;
+    width:34px;
+    display:flex;
+    align-items:flex-end;
+  }
+  .bar-fill{
+    width:100%;
+    background:var(--ink-2);
+    border-radius:4px 4px 0 0;
+  }
+  .bar-fill.one{background:var(--orange);}
+  .bar-col label{
+    font-size:11px;
+    color:var(--ink-1);
+  }
+
+  /* historial */
+  .history{
+    margin-top:34px;
+  }
+  .history-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:12px;
+  }
+  .history-head .chart-title{margin:0;}
+  .history-head .n{
+    font-size:11px;
+    color:var(--ink-2);
+  }
+  .ticks{
+    display:flex;
+    align-items:flex-end;
+    gap:3px;
+    height:54px;
+    padding:8px 4px;
+    background:var(--bg-1);
+    border:1px solid var(--panel-line);
+    border-radius:9px;
+    overflow:hidden;
+  }
+  .tick{
+    flex:1 0 6px;
+    max-width:14px;
+    border-radius:2px 2px 0 0;
+    transform-origin:bottom;
+  }
+  .tick.constante{background:var(--teal);}
+  .tick.balanceada{background:var(--violet);}
+  .ticks .empty{
+    color:var(--ink-2);
+    font-size:11.5px;
+    margin:auto;
+  }
+
+  .legend{
+    display:flex;
+    gap:18px;
+    margin-top:10px;
+    font-size:11px;
+    color:var(--ink-1);
+  }
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .dot.constante{background:var(--teal);}
+  .dot.balanceada{background:var(--violet);}
+
+  /* stats footer */
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--panel-line);
+    border:1px solid var(--panel-line);
+    border-radius:14px;
+    overflow:hidden;
+    margin-top:28px;
+  }
+  .stat{
+    background:var(--panel);
+    padding:20px 22px;
+  }
+  .stat .k{
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-2);
+    margin-bottom:8px;
+  }
+  .stat .v{
+    font-family:var(--disp);
+    font-size:28px;
+    font-weight:700;
+    color:var(--ink-0);
+  }
+  .stat .v small{
+    font-size:13px;
+    color:var(--ink-2);
+    font-weight:500;
+  }
+
+  footer{
+    margin-top:36px;
+    color:var(--ink-2);
+    font-size:11.5px;
+    line-height:1.7;
+  }
+
+  @media (max-width:640px){
+    .stats{grid-template-columns:1fr 1fr;}
+    .stat:nth-child(3){grid-column:1 / -1;}
+    .stat .k{letter-spacing:.06em; font-size:10px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow" id="eyebrow">Simulación clásica y cuántica</div>
+  <h1>Caja negra — <span>¿constante</span> o balanceada?</h1>
+  <p class="sub" id="subtext">
+    La caja esconde una función f(x) que solo acepta 0 o 1. El método clásico
+    la consulta dos veces —<code>f(0)</code> y <code>f(1)</code>— y compara
+    las respuestas para decidir su tipo. Pulsa el interruptor para que te
+    toque una caja nueva al azar; la gráfica y el historial se actualizan solos.
+  </p>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="modeClasico">Clásico</button>
+    <button class="mode-btn" id="modeCuantico">Cuántico (Deutsch)</button>
+  </div>
+
+  <div class="console">
+    <div class="box-side">
+      <div class="box-label" id="boxLabel">Panel de consulta</div>
+
+      <div class="box-svg-wrap" id="svgClasico">
+        <svg width="180" height="120" viewBox="0 0 180 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="14" width="172" height="92" rx="14" fill="#100b06" stroke="#ff7a1a" stroke-opacity="0.55" stroke-width="2"/>
+          <rect x="14" y="24" width="152" height="72" rx="8" fill="#1a1108" stroke="#3a2412" stroke-width="1"/>
+          <text x="90" y="66" text-anchor="middle" font-family="ui-monospace, monospace" font-size="13" fill="#ff9d4d" letter-spacing="2">f(x)</text>
+          <circle cx="4" cy="40" r="4" fill="#2a1c10"/>
+          <circle cx="4" cy="80" r="4" fill="#2a1c10"/>
+          <circle cx="176" cy="40" r="4" fill="#2a1c10"/>
+          <circle cx="176" cy="80" r="4" fill="#2a1c10"/>
+        </svg>
+      </div>
+
+      <div class="box-svg-wrap" id="svgCuantico" style="display:none;">
+        <svg width="180" height="120" viewBox="0 0 180 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="6" y1="35" x2="174" y2="35" stroke="#3a2f5c" stroke-width="1.5"/>
+          <line x1="6" y1="80" x2="174" y2="80" stroke="#3a2f5c" stroke-width="1.5"/>
+          <rect x="28" y="20" width="26" height="30" rx="4" fill="#1a1330" stroke="#b18cff" stroke-width="1.5"/>
+          <text x="41" y="40" text-anchor="middle" font-size="13" fill="#b18cff">H</text>
+          <rect x="28" y="65" width="26" height="30" rx="4" fill="#1a1330" stroke="#b18cff" stroke-width="1.5"/>
+          <text x="41" y="85" text-anchor="middle" font-size="13" fill="#b18cff">H</text>
+          <rect x="80" y="20" width="34" height="75" rx="4" fill="#1a1108" stroke="#ff7a1a" stroke-width="1.5"/>
+          <text x="97" y="62" text-anchor="middle" font-size="12" fill="#ff9d4d">U_f</text>
+          <rect x="138" y="20" width="26" height="30" rx="4" fill="#1a1330" stroke="#b18cff" stroke-width="1.5"/>
+          <text x="151" y="40" text-anchor="middle" font-size="13" fill="#b18cff">H</text>
+          <circle cx="171" cy="35" r="5" fill="none" stroke="#ffb454" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <div class="qstate" id="qstate" style="display:none;">|ψ⟩ = ?</div>
+
+      <div class="lights" id="lightsClasico">
+        <div class="light-unit">
+          <div class="light" id="light0"></div>
+          <small>f(0)</small>
+        </div>
+        <div class="light-unit">
+          <div class="light" id="light1"></div>
+          <small>f(1)</small>
+        </div>
+      </div>
+
+      <div class="lights" id="lightsCuantico" style="display:none;">
+        <div class="light-unit">
+          <div class="light q" id="lightQ"></div>
+          <small>1 consulta</small>
+        </div>
+      </div>
+
+      <button class="btn" id="runBtn">&#9654; Ejecutar nueva caja</button>
+      <div class="hint" id="hintText">2 consultas por corrida, siempre</div>
+    </div>
+
+    <div class="readout-side">
+      <div class="readout-grid">
+        <div class="cell">
+          <div class="k" id="k0">f(0)</div>
+          <div class="v" id="valF0">—</div>
+        </div>
+        <div class="cell">
+          <div class="k" id="k1">f(1)</div>
+          <div class="v" id="valF1">—</div>
+        </div>
+      </div>
+
+      <div class="verdict-row">
+        <div>
+          <div class="k">Veredicto</div>
+          <div class="verdict" id="verdict">Esperando corrida…</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="k">Consultas</div>
+          <div class="verdict" id="queryCount" style="color:var(--ink-1);">–</div>
+        </div>
+      </div>
+
+      <div class="chart-title">Respuestas de esta corrida</div>
+      <div class="bars">
+        <div class="bar-col">
+          <div class="bar-track"><div class="bar-fill" id="bar0" style="height:0%"></div></div>
+          <label>f(0)</label>
+        </div>
+        <div class="bar-col">
+          <div class="bar-track"><div class="bar-fill" id="bar1" style="height:0%"></div></div>
+          <label>f(1)</label>
+        </div>
+      </div>
+
+      <div class="history">
+        <div class="history-head">
+          <div class="chart-title">Historial de corridas</div>
+          <div class="n"><span id="histCount">0</span> registradas</div>
+        </div>
+        <div class="ticks" id="ticks">
+          <div class="empty">Todavía no hay corridas — pulsa el interruptor.</div>
+        </div>
+        <div class="legend">
+          <span><i class="dot constante"></i>Constante</span>
+          <span><i class="dot balanceada"></i>Balanceada</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="k">Corridas</div>
+      <div class="v" id="statTotal">0</div>
+    </div>
+    <div class="stat">
+      <div class="k">Exactitud</div>
+      <div class="v" id="statAcc">—<small>%</small></div>
+    </div>
+    <div class="stat">
+      <div class="k">Promedio de consultas</div>
+      <div class="v" id="statAvg">—</div>
+    </div>
+  </div>
+
+  <footer>
+    Cada corrida elige al azar una de las 4 cajas posibles (2 constantes, 2 balanceadas).
+    En modo <strong>clásico</strong> se resuelve con 2 consultas, comparando f(0) contra f(1).
+    En modo <strong>cuántico</strong> se simula el algoritmo de Deutsch: un qubit de entrada
+    y uno auxiliar pasan por compuertas Hadamard, el oráculo U_f y otra Hadamard antes de
+    medir. Por interferencia, el qubit de entrada da 0 si f es constante y 1 si es
+    balanceada — el mismo resultado que el método clásico, pero con <strong>una sola
+    consulta</strong> al oráculo.
+  </footer>
+
+</div>
+
+<script>
+  const FUNCIONES = [
+    { nombre: "f1 · constante 0", tipo: "Constante", f: x => 0 },
+    { nombre: "f2 · constante 1", tipo: "Constante", f: x => 1 },
+    { nombre: "f3 · balanceada (identidad)", tipo: "Balanceada", f: x => x },
+    { nombre: "f4 · balanceada (negada)", tipo: "Balanceada", f: x => 1 - x },
+  ];
+
+  const state = { historial: [], modo: 'clasico' };
+
+  const el = id => document.getElementById(id);
+  const light0 = el('light0'), light1 = el('light1'), lightQ = el('lightQ');
+
+  function resolverClasico(caja){
+    const f0 = caja.f(0);
+    const f1 = caja.f(1);
+    const consultas = 2;
+    const tipoObtenido = (f0 === f1) ? "Constante" : "Balanceada";
+    return { ...caja, f0, f1, consultas, tipoObtenido, acierto: tipoObtenido === caja.tipo, modo: 'clasico' };
+  }
+
+  // Deutsch: 1 sola consulta al oráculo (una llamada a U_f evaluando ambas
+  // ramas en superposición). El bit medido en el qubit de entrada es
+  // f(0) XOR f(1): 0 → constante, 1 → balanceada.
+  function resolverCuantico(caja){
+    const f0 = caja.f(0);
+    const f1 = caja.f(1);
+    const medida = f0 ^ f1; // resultado de medir tras H–U_f–H
+    const consultas = 1;
+    const tipoObtenido = (medida === 0) ? "Constante" : "Balanceada";
+    const ket = medida === 0
+      ? '|ψ⟩ → |0⟩ (interferencia constructiva)'
+      : '|ψ⟩ → |1⟩ (interferencia destructiva)';
+    return { ...caja, f0, f1, consultas, tipoObtenido, medida, ket, acierto: tipoObtenido === caja.tipo, modo: 'cuantico' };
+  }
+
+  function encenderLuces(){
+    light0.classList.add('on');
+    setTimeout(() => light1.classList.add('on'), 260);
+    setTimeout(() => { light0.classList.remove('on'); light1.classList.remove('on'); }, 900);
+  }
+
+  function encenderLuzCuantica(){
+    lightQ.classList.add('on', 'q');
+    setTimeout(() => lightQ.classList.remove('on'), 700);
+  }
+
+  function cambiarModo(modo){
+    state.modo = modo;
+    const esCuantico = modo === 'cuantico';
+
+    el('modeClasico').classList.toggle('active', !esCuantico);
+    el('modeCuantico').classList.toggle('active', esCuantico);
+
+    el('svgClasico').style.display = esCuantico ? 'none' : 'flex';
+    el('svgCuantico').style.display = esCuantico ? 'flex' : 'none';
+    el('qstate').style.display = esCuantico ? 'block' : 'none';
+    el('lightsClasico').style.display = esCuantico ? 'none' : 'flex';
+    el('lightsCuantico').style.display = esCuantico ? 'flex' : 'none';
+
+    el('boxLabel').textContent = esCuantico ? 'Circuito cuántico (Deutsch)' : 'Panel de consulta';
+    el('hintText').textContent = esCuantico ? '1 sola consulta por corrida, siempre' : '2 consultas por corrida, siempre';
+    el('k0').textContent = esCuantico ? 'f(0)' : 'f(0)';
+    el('k1').textContent = esCuantico ? 'f(1)' : 'f(1)';
+    if (!esCuantico) el('qstate').textContent = '|ψ⟩ = ?';
+  }
+
+  function pintarCorridaActual(r){
+    el('valF0').textContent = r.f0;
+    el('valF1').textContent = r.f1;
+    el('queryCount').textContent = r.consultas;
+
+    const v = el('verdict');
+    v.textContent = r.tipoObtenido;
+    const esCuantico = r.modo === 'cuantico';
+    v.className = 'verdict ' + (r.tipoObtenido === 'Constante' ? 'constante' : 'balanceada') + (esCuantico ? ' q' : '');
+
+    el('bar0').style.height = (r.f0 === 1 ? 100 : 6) + '%';
+    el('bar1').style.height = (r.f1 === 1 ? 100 : 6) + '%';
+    el('bar0').classList.toggle('one', r.f0 === 1);
+    el('bar1').classList.toggle('one', r.f1 === 1);
+
+    if (esCuantico) el('qstate').textContent = r.ket;
+  }
+
+  function pintarHistorial(){
+    const cont = el('ticks');
+    cont.innerHTML = '';
+    const ultimos = state.historial.slice(-40);
+
+    if (ultimos.length === 0){
+      cont.innerHTML = '<div class="empty">Todavía no hay corridas — pulsa el interruptor.</div>';
+    } else {
+      ultimos.forEach(r => {
+        const t = document.createElement('div');
+        t.className = 'tick ' + (r.tipoObtenido === 'Constante' ? 'constante' : 'balanceada');
+        t.style.height = '100%';
+        if (r.modo === 'cuantico') t.style.opacity = '0.6';
+        const etiquetaModo = r.modo === 'cuantico' ? 'cuántico' : 'clásico';
+        t.title = `${r.nombre} → ${r.tipoObtenido} (${etiquetaModo}, ${r.consultas} consulta${r.consultas > 1 ? 's' : ''})`;
+        cont.appendChild(t);
+      });
+    }
+    el('histCount').textContent = state.historial.length;
+  }
+
+  function pintarStats(){
+    const total = state.historial.length;
+    el('statTotal').textContent = total;
+
+    if (total === 0){
+      el('statAcc').innerHTML = '—<small>%</small>';
+      el('statAvg').textContent = '—';
+      return;
+    }
+    const aciertos = state.historial.filter(r => r.acierto).length;
+    const exactitud = (aciertos / total * 100).toFixed(1);
+    const promedio = (state.historial.reduce((s, r) => s + r.consultas, 0) / total).toFixed(2);
+
+    el('statAcc').innerHTML = exactitud + '<small>%</small>';
+    el('statAvg').textContent = promedio;
+  }
+
+  function nuevaCorrida(){
+    const caja = FUNCIONES[Math.floor(Math.random() * FUNCIONES.length)];
+    const r = (state.modo === 'cuantico') ? resolverCuantico(caja) : resolverClasico(caja);
+    state.historial.push(r);
+
+    if (state.modo === 'cuantico') encenderLuzCuantica(); else encenderLuces();
+    pintarCorridaActual(r);
+    pintarHistorial();
+    pintarStats();
+  }
+
+  el('runBtn').addEventListener('click', nuevaCorrida);
+  el('modeClasico').addEventListener('click', () => cambiarModo('clasico'));
+  el('modeCuantico').addEventListener('click', () => cambiarModo('cuantico'));
+</script>
+</body>
+</html>
